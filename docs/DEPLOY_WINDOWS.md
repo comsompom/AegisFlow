@@ -46,6 +46,20 @@ To deploy the Anchor program from Windows you need **Solana CLI** and **Anchor C
 
 ---
 
+## Build fix (program ID and overflow-checks)
+
+If `anchor build` fails with **"String is the wrong size"**: use a program ID that is **44 characters** (e.g. `AegisF1ow11111111111111111111111111111111111`) in `Anchor.toml` and in `programs/aegisflow/src/lib.rs` `declare_id!(...)`.
+
+If it fails with **"overflow-checks is not enabled"**: add to the workspace root `Cargo.toml` (e.g. `contracts-solana/Cargo.toml`):
+```toml
+[profile.release]
+overflow-checks = true
+```
+
+**"no such command: build-sbf"**: Anchor needs the Solana build toolchain. Either install the full **Solana CLI** (see below), or run `cargo install solana-cargo-build-sbf`, **close and reopen your terminal**, then run `anchor build` again. You still need the **Solana CLI** for `anchor deploy` (keypair, config, airdrop).
+
+---
+
 ## Option B: Native Windows (Rust + VS Build Tools)
 
 1. **Install Visual Studio 2022 Build Tools with C++** (required for Rust linker on Windows).  
