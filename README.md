@@ -115,6 +115,7 @@ cd ..
 
 ## Documentation
 
+- [Deployment checklist](docs/DEPLOYMENT_CHECKLIST.md) — required env, deploy contracts, start backend & webapp, smoke test
 - [Wallet & private keys](docs/WALLET_AND_KEYS.md) — where to get your MetaMask private key and where to use it
 - [Development plan](development_plan.md) — full implementation plan
 - [Solution concept](solution.md) — AegisFlow concept and compliance sandbox
