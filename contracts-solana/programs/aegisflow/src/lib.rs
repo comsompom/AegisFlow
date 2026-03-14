@@ -94,6 +94,56 @@ pub mod aegisflow {
         );
         Ok(())
     }
+
+    /// Create vault PDA so it can hold SOL. Call once before depositing.
+    pub fn init_vault(ctx: Context<InitVault>) -> Result<()> {
+        // Vault PDA is created with minimal space; lamports can be transferred to it later.
+        Ok(())
+    }
+
+    /// Transfer SOL from vault PDA to a whitelisted recipient. Enforces AML limits and records volume.
+    pub fn vault_withdraw(ctx: Context<VaultWithdraw>, amount: u64) -> Result<()> {
+        let config = &mut ctx.accounts.config;
+        require!(!config.paused, AegisflowError::Paused);
+        require!(amount > 0, AegisflowError::ZeroAmount);
+        require!(
+            config.authority == ctx.accounts.authority.key() || config.ai_agent == ctx.accounts.authority.key(),
+            AegisflowError::Unauthorized
+        );
+        let recipient = ctx.accounts.recipient.key();
+        require!(config.whitelist.contains(&recipient), AegisflowError::NotWhitelisted);
+        require!(!config.blacklist.contains(&recipient), AegisflowError::Blacklisted);
+        require!(amount <= config.max_per_tx, AegisflowError::ExceedsMaxPerTx);
+
+        let now = Clock::get()?.unix_timestamp;
+        if now >= config.daily_volume_reset_time + SECONDS_PER_DAY {
+            config.daily_volume_reset_time = now;
+            config.daily_volume_used = 0;
+        }
+        config.daily_volume_used = config
+            .daily_volume_used
+            .checked_add(amount)
+            .ok_or(AegisflowError::Overflow)?;
+        require!(
+            config.daily_volume_used <= config.max_daily_volume,
+            AegisflowError::DailyLimitExceeded
+        );
+
+        let vault = &ctx.accounts.vault;
+        let recipient_info = &ctx.accounts.recipient;
+        let seeds = &[b"vault".as_ref(), &[ctx.bumps.vault]];
+        let signer_seeds = &[&seeds[..]];
+        let cpi_ctx = CpiContext::new_with_signer(
+            ctx.accounts.system_program.to_account_info(),
+            anchor_lang::system_program::Transfer {
+                from: vault.to_account_info(),
+                to: recipient_info.to_account_info(),
+            },
+            signer_seeds,
+        );
+        anchor_lang::system_program::transfer(cpi_ctx, amount)?;
+        Ok(())
+    }
 }
 
 /// Space: 8 (disc) + 32*4 + (4+MAX_LIST_LEN*32)*2 + 8*4 + 1 + 1
@@ -171,6 +221,50 @@ pub struct RecordVolume<'info> {
     pub authority: Signer<'info>,
 }
 
+#[derive(Accounts)]
+pub struct InitVault<'info> {
+    #[account(
+        init,
+        payer = authority,
+        space = 8 + 1,
+        seeds = [b"vault"],
+        bump
+    )]
+    pub vault: Account<'info, VaultAccount>,
+
+    #[account(mut)]
+    pub authority: Signer<'info>,
+
+    pub system_program: Program<'info, System>,
+}
+
+#[account]
+pub struct VaultAccount {
+    pub dummy: u8, // space = 1
+}
+
+#[derive(Accounts)]
+pub struct VaultWithdraw<'info> {
+    #[account(
+        mut,
+        seeds = [b"compliance"],
+        bump = config.bump
+    )]
+    pub config: Account<'info, ComplianceConfig>,
+
+    /// CHECK: vault PDA holding lamports
+    #[account(mut, seeds = [b"vault"], bump)]
+    pub vault: UncheckedAccount<'info>,
+
+    /// CHECK: recipient will receive lamports
+    #[account(mut)]
+    pub recipient: AccountInfo<'info>,
+
+    pub authority: Signer<'info>,
+
+    pub system_program: Program<'info, System>,
+}
+
 #[error_code]
 pub enum AegisflowError {
     #[msg("Unauthorized")]
@@ -187,4 +281,10 @@ pub enum AegisflowError {
     DailyLimitExceeded,
     #[msg("Overflow")]
     Overflow,
+    #[msg("Not whitelisted")]
+    NotWhitelisted,
+    #[msg("Exceeds max per tx")]
+    ExceedsMaxPerTx,
+    #[msg("Zero amount")]
+    ZeroAmount,
 }

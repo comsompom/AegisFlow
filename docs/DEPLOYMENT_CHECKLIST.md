@@ -1,68 +1,84 @@
-# AegisFlow — Deployment checklist
+# AegisFlow — Deployment checklist (Solana)
 
-## Required env (you have updated these)
-
-| Location | Required | Optional |
-|----------|----------|----------|
-| **contracts/.env** | `PRIVATE_KEY` | `NEON_RPC_URL` (default: https://devnet.neonevm.org) |
-| **backend/.env** | `PRIVATE_KEY`, `COMPLIANCE_REGISTRY_ADDRESS`, `AEGISFLOW_VAULT_ADDRESS` | `NEON_RPC_URL`, `DATABASE_URL`, `OPENAI_API_KEY` |
-| **webapp/.env** | `BACKEND_API_URL`, `SECRET_KEY` | `DEMO_USER`, `DEMO_PASSWORD` |
-
-Contract addresses come from **contracts/deployed.json** after a successful deploy.
+Hackathon requirement: **build on Solana**. This project uses **native Solana** (Anchor) on **Solana Devnet**.
 
 ---
 
-## Step 1: Deploy contracts (Neon EVM Devnet)
+## Required env
+
+| Location | Required | Optional |
+|----------|----------|----------|
+| **backend/.env** | `SOLANA_RPC_URL`, `SOLANA_PROGRAM_ID` | `SOLANA_KEYPAIR_PATH` or `SOLANA_PRIVATE_KEY` (for submitting txs), `OPENAI_API_KEY`, `DATABASE_URL` |
+| **webapp/.env** | `BACKEND_API_URL`, `SECRET_KEY` | `DEMO_USER`, `DEMO_PASSWORD` |
+
+Program ID comes from **contracts-solana** after `anchor build` / `anchor keys list`.
+
+---
+
+## Step 1: Deploy program (Solana Devnet)
 
 From repo root:
 
 ```bash
-cd contracts
-python deploy.py
+cd contracts-solana
+solana config set --url devnet
+solana airdrop 2
+anchor build
+anchor keys list    # copy the program ID → backend .env SOLANA_PROGRAM_ID
+anchor deploy --provider.cluster devnet
 ```
 
-- You need NEON tokens on Devnet (you have these).
-- If you see **Read timed out**: Neon public RPC can be slow. Wait a few minutes and run `python deploy.py` again. Timeouts in the script are set to 120s.
-- On success you get **contracts/deployed.json** with `ComplianceRegistry` and `AegisFlowVault` addresses.
-
-To copy addresses into backend env:
-
-```bash
-python apply_deployed.py
-```
-
-Then add the two lines it prints to **backend/.env** (or copy from **contracts/deployed.json** by hand).
+- You need SOL on Devnet ([Solana faucet](https://faucet.solana.com/)).
+- After deploy, **initialize** the program once from the backend (with `.env` set):  
+  `cd backend && python -m scripts.init_solana_program`  
+  This runs `init_config`, `init_vault`, and `set_vault`. Alternatively use the Anchor TS client (see `contracts-solana/README.md`).
 
 ---
 
-## Step 2: Start backend
+## Step 2: Backend .env
+
+In **backend/.env** set:
+
+- `SOLANA_RPC_URL=https://api.devnet.solana.com`
+- `SOLANA_PROGRAM_ID=<program-id-from-step-1>`
+- `SOLANA_KEYPAIR_PATH=~/.config/solana/id.json` (or `SOLANA_PRIVATE_KEY=...`) so the backend can submit whitelist/limits/vault_withdraw transactions.
+
+---
+
+## Step 3: Start backend
 
 ```bash
 cd backend
 uvicorn app.main:app --reload --host 0.0.0.0 --port 8000
 ```
 
-- SQLite DB and tables are created on first run.
+- SQLite and tables are created on first run.
 - Check: http://localhost:8000/health → `{"status":"ok"}`
 - Check: http://localhost:8000/docs
 
 ---
 
-## Step 3: Start webapp
+## Step 4: Start webapp
 
 ```bash
 cd webapp
 flask run
 ```
 
-- Set `FLASK_APP=app:app` if needed. Open http://localhost:5000, log in (e.g. compliance / demo123), then use Dashboard, Whitelist, Transfer, etc.
+Open http://localhost:5000, log in (e.g. demo user), then use Dashboard, Whitelist, Limits, Transfer, AI agent, Audit.
 
 ---
 
-## Step 4: Quick smoke test
+## Step 5: Smoke test
 
-1. **Backend:** `GET /health` and `GET /api/audit/log` (can be empty).
-2. **Webapp:** Log in → Dashboard → add an address to whitelist (backend must have contract addresses and `PRIVATE_KEY` for the tx to be submitted).
-3. **Contracts:** With addresses in backend .env, `/api/compliance/limits` should return real limits from chain.
+1. **Backend:** `GET /health`, `GET /api/compliance/limits` (returns limits from chain once config is initialized).
+2. **Webapp:** Log in → add address to whitelist (needs `SOLANA_KEYPAIR_PATH` or `SOLANA_PRIVATE_KEY` for tx).
+3. **Transfer:** Execute a transfer to a whitelisted address (amount in lamports); backend calls `vault_withdraw` on Solana when signer is configured.
 
-If deploy keeps timing out, run `python deploy.py` from **contracts/** in your own terminal and watch the output; retry when the Neon RPC is responsive.
+---
+
+## Troubleshooting
+
+- **"Solana program not configured"** — set `SOLANA_PROGRAM_ID` in backend/.env.
+- **Whitelist/limits tx fails** — ensure keypair has SOL on Devnet and is the program authority.
+- **RPC errors** — use `https://api.devnet.solana.com` or another Devnet RPC from [Solana docs](https://docs.solana.com/cluster/rpc-endpoints).

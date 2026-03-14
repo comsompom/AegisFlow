@@ -1,8 +1,9 @@
 from fastapi import APIRouter, HTTPException
 from pydantic import BaseModel
 
-from app.services.blockchain import get_registry_contract, get_limits
-from web3 import Web3
+from app.config import get_settings
+from app.services.blockchain import get_limits, is_whitelisted
+from app.services import blockchain_solana
 
 router = APIRouter()
 
@@ -24,9 +25,13 @@ class LimitsUpdate(BaseModel):
     max_daily_volume: str
 
 
+def _require_solana():
+    if not get_settings().solana_program_id:
+        raise HTTPException(503, "Solana program not configured (set SOLANA_PROGRAM_ID)")
+
+
 @router.get("/whitelist/{address}")
 def check_whitelist(address: str):
-    from app.services.blockchain import is_whitelisted
     return {"address": address, "whitelisted": is_whitelisted(address)}
 
 
@@ -37,53 +42,49 @@ def limits():
 
 @router.post("/whitelist")
 def add_to_whitelist(body: WhitelistAdd):
-    contract = get_registry_contract()
-    if not contract:
-        raise HTTPException(503, "Contract not configured")
+    _require_solana()
     try:
-        addr = Web3.to_checksum_address(body.address)
-        tx = contract.functions.addToWhitelist(addr)
-        # In production: build, sign, send via backend wallet
-        return {"ok": True, "message": "Would submit tx (configure backend signer)"}
+        sig = blockchain_solana.add_to_whitelist(body.address)
+        if sig:
+            return {"ok": True, "message": "Transaction submitted", "signature": sig}
+        return {"ok": False, "message": "Submit failed (check keypair and RPC)"}
     except Exception as e:
         raise HTTPException(400, str(e))
 
 
 @router.delete("/whitelist")
 def remove_from_whitelist(body: WhitelistRemove):
-    contract = get_registry_contract()
-    if not contract:
-        raise HTTPException(503, "Contract not configured")
+    _require_solana()
     try:
-        addr = Web3.to_checksum_address(body.address)
-        contract.functions.removeFromWhitelist(addr)
-        return {"ok": True, "message": "Would submit tx"}
+        sig = blockchain_solana.remove_from_whitelist(body.address)
+        if sig:
+            return {"ok": True, "message": "Transaction submitted", "signature": sig}
+        return {"ok": False, "message": "Submit failed (check keypair and RPC)"}
     except Exception as e:
         raise HTTPException(400, str(e))
 
 
 @router.post("/blacklist")
 def add_to_blacklist(body: BlacklistAdd):
-    contract = get_registry_contract()
-    if not contract:
-        raise HTTPException(503, "Contract not configured")
+    _require_solana()
     try:
-        addr = Web3.to_checksum_address(body.address)
-        contract.functions.addToBlacklist(addr)
-        return {"ok": True, "message": "Would submit tx"}
+        sig = blockchain_solana.add_to_blacklist(body.address)
+        if sig:
+            return {"ok": True, "message": "Transaction submitted", "signature": sig}
+        return {"ok": False, "message": "Submit failed (check keypair and RPC)"}
     except Exception as e:
         raise HTTPException(400, str(e))
 
 
 @router.post("/limits")
 def update_limits(body: LimitsUpdate):
-    contract = get_registry_contract()
-    if not contract:
-        raise HTTPException(503, "Contract not configured")
+    _require_solana()
     try:
         max_per_tx = int(body.max_per_tx)
         max_daily = int(body.max_daily_volume)
-        contract.functions.setLimits(max_per_tx, max_daily)
-        return {"ok": True, "message": "Would submit tx"}
+        sig = blockchain_solana.set_limits(max_per_tx, max_daily)
+        if sig:
+            return {"ok": True, "message": "Transaction submitted", "signature": sig}
+        return {"ok": False, "message": "Submit failed (check keypair and RPC)"}
     except Exception as e:
         raise HTTPException(400, str(e))

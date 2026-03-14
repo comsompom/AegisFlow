@@ -14,19 +14,17 @@ An AI-orchestrated, permissioned stablecoin payment and treasury router on Solan
 - **AML** — Enforce limits, controls, and reporting.
 - **Travel Rule** — Collect/verify/share originator/beneficiary data above threshold (e.g. $1,000).
 
-### 1.3 Tech Stack Summary
+### 1.3 Tech Stack Summary (Hackathon: build on Solana)
 | Layer | Technology | Deployment Target |
 |-------|------------|-------------------|
-| Smart contracts | Solidity | Solana via **Neon EVM** (Devnet/Testnet) |
-| Backend / AI orchestration | Python | Local / cloud (e.g. FastAPI service) |
+| Smart contracts | **Rust / Anchor** | **Solana Devnet** (native) |
+| Backend / AI orchestration | Python | FastAPI; Solana RPC + solders |
 | **Web application** | **Flask** | User-facing institutional control room |
-| Compliance logic | Python + contract enforcements | Backend + on-chain |
+| Compliance logic | Python + on-chain (Anchor program) | Backend + Solana |
 | FX / swaps | Jupiter API (or mock) | Solana mainnet or testnet as needed |
 | Custody / multi-sig (emulated) | Fireblocks-style flows | Backend + config |
 
-**Note on Solidity on Solana:** Solidity contracts run on **Neon EVM**, which is an EVM runtime on Solana. Token Extensions (Transfer Hooks) are a **native Solana (SPL Token-2022)** feature. This plan uses Solidity on Neon for the core compliance and vault logic; equivalent behavior (whitelists, transfer checks, limits) is implemented in Solidity.
-
-**Native Solana (recommended for hackathon):** To avoid Neon’s slow/unreliable Devnet RPC and align with “built on Solana,” use the **native Solana (Anchor)** program in **`contracts-solana/`**. It implements the same compliance registry (whitelist, blacklist, limits) in **Rust/Anchor**, deploys to **Solana Devnet** with `anchor deploy --provider.cluster devnet`, and uses Solana’s standard RPC (`api.devnet.solana.com`). See [docs/SOLANA_VS_NEON.md](docs/SOLANA_VS_NEON.md) and `contracts-solana/README.md`.
+**Hackathon alignment:** The rules require *all projects must be built on Solana*. This project uses **native Solana** only: the Anchor program in **`contracts-solana/`** (compliance registry + vault) deploys to **Solana Devnet** with `anchor deploy --provider.cluster devnet`. The backend uses **Solana RPC** and **solders** to read state and submit transactions. No Neon EVM.
 
 ---
 
@@ -50,10 +48,9 @@ An AI-orchestrated, permissioned stablecoin payment and treasury router on Solan
                     ┌───────────────────┼───────────────────┐
                     ▼                   ▼                   ▼
 ┌───────────────────────┐  ┌───────────────────────┐  ┌───────────────────────┐
-│  Neon EVM (Solana)     │  │  Off-chain DB         │  │  KYT / AML oracles    │
-│  • Vault (Solidity)    │  │  • Travel Rule store  │  │  • Risk scores        │
-│  • Compliance rules   │  │  • Audit events       │  │  • Sanctions/mixer    │
-│  • Whitelist / limits  │  │  • Config / limits    │  │  (mock or API)        │
+│  Solana (Anchor)       │  │  Off-chain DB         │  │  KYT / AML oracles    │
+│  • Vault + compliance  │  │  • Travel Rule store  │  │  • Risk scores       │
+│  • Whitelist / limits  │  │  • Audit events       │  │  (mock or API)        │
 └───────────────────────┘  └───────────────────────┘  └───────────────────────┘
 ```
 
@@ -67,62 +64,31 @@ An AI-orchestrated, permissioned stablecoin payment and treasury router on Solan
 
 | Step | Task | Details |
 |------|------|--------|
-| 1.1 | Create repo structure | `contracts/` (Solidity), `backend/` (Python API), `webapp/` (Flask), `docs/` |
-| 1.2 | Solidity toolchain | Node.js, Hardhat, Solidity 0.8.x; configure Hardhat for Neon EVM Devnet (RPC, chain ID 245022926) |
-| 1.3 | Python environment | Python 3.11+, venv, `requirements.txt`: FastAPI, Flask, LangChain, **openai** (or langchain-openai), web3 (Neon), pydantic, httpx, (optional) Chainalysis/API clients |
-| 1.4 | Neon EVM access | Wallet with test NEON (faucet), save deployer key in env (e.g. `.env`), never commit secrets |
+| 1.1 | Create repo structure | `contracts-solana/` (Anchor), `backend/` (Python API), `webapp/` (Flask), `docs/` |
+| 1.2 | Solana / Anchor | Rust, Solana CLI, Anchor CLI; program in `contracts-solana/` |
+| 1.3 | Python (UI + API only) | Python 3.11+, venv: FastAPI, Flask, LangChain, **openai**, solana/solders, pydantic, httpx |
+| 1.4 | Solana wallet | Keypair for deploy and backend signer; SOL on Devnet (faucet), key in env, never commit secrets |
 | 1.5a | **AI / LLM (OpenAI allowed)** | Hackathon rules do **not** restrict AI providers. You may use **OpenAI** (e.g. GPT-4) for the treasury agent: set `OPENAI_API_KEY` in `.env`. Use LangChain’s OpenAI integration for the agent; key stays server-side only. |
 | 1.6 | Solana testnet (if needed for Jupiter) | Configure RPC for Solana Devnet; get test USDC/EURC or use mocks |
 
-**Deliverable:** Repo with `contracts/`, `backend/`, `webapp/`, env template; Hardhat, FastAPI, and Flask app runnable locally.
+**Deliverable:** Repo with `contracts-solana/`, `backend/`, `webapp/`; Anchor build, FastAPI and Flask runnable locally.
 
 ---
 
-### Phase 2: Solidity Contracts (Neon EVM on Solana)
+### Phase 2: Solana Program (Anchor on Devnet)
 
-Deploy on **Neon EVM Devnet** (Solana test chain for EVM).
+Deploy on **Solana Devnet** (native).
 
-#### 2.1 Compliance & access control
-
-| Step | Task | Details |
-|------|------|--------|
-| 2.1.1 | `ComplianceRegistry.sol` | Central registry: KYC whitelist (addresses allowed to receive), blacklist, optional per-address caps. |
-| 2.1.2 | Roles | `OWNER`, `COMPLIANCE_OFFICER`, `AI_AGENT` (or single “operator”). Only compliance can update whitelist/blacklist; only owner can set AML global limits. |
-| 2.1.3 | Events | Emit `AddressWhitelisted`, `AddressBlacklisted`, `LimitsUpdated` for audit. |
-
-#### 2.2 Vault & transfer rules
+#### 2.1 Compliance & vault (Anchor)
 
 | Step | Task | Details |
 |------|------|--------|
-| 2.2.1 | `AegisFlowVault.sol` | ERC-20–style vault (or wrapper) for stablecoin balances. Holds/releases tokens only to whitelisted addresses. |
-| 2.2.2 | Transfer hook (in-contract) | On every transfer/withdraw: check `ComplianceRegistry.isWhitelisted(to)` and `!isBlacklisted(to)`; revert if not compliant. |
-| 2.2.3 | Deposit | Allow approved entities (e.g. institutional wallets) to deposit; record balances (ERC-20 or internal accounting). |
-| 2.2.4 | Withdraw / transfer | Only to whitelisted addresses; optional per-tx and daily caps enforced in contract (AML). |
+| 2.1.1 | ComplianceConfig | PDA: KYC whitelist, blacklist, roles (authority, compliance_officer, ai_agent, vault). |
+| 2.1.2 | Instructions | init_config, add_to_whitelist, remove_from_whitelist, add_to_blacklist, set_limits, set_vault, set_paused, record_volume. |
+| 2.2 | Vault | Vault PDA holds SOL; vault_withdraw(amount) to whitelisted recipient; enforces AML limits and records volume. |
+| 2.3 | Deploy | `anchor build` and `anchor deploy --provider.cluster devnet`; init via backend script (init_config, init_vault, set_vault). |
 
-#### 2.3 AML limits (deterministic sandbox)
-
-| Step | Task | Details |
-|------|------|--------|
-| 2.3.1 | Global limits | In vault or registry: `maxPerTx`, `maxDailyVolume` (per agent or global). |
-| 2.3.2 | Enforcement | Before executing transfer/swap, contract checks: `amount <= maxPerTx`, `dailyVolume + amount <= maxDailyVolume`; reset daily volume on a 24h boundary (e.g. by block timestamp or oracle). |
-| 2.3.3 | Upgrade path | Consider `Pausable` and/or timelock for limit changes by owner. |
-
-#### 2.4 FX / swap integration (contract side)
-
-| Step | Task | Details |
-|------|------|--------|
-| 2.4.1 | Swap adapter | Contract (e.g. `AegisFlowSwap.sol`) that receives “swap” instructions from backend: e.g. approve + call a known DEX/router on Neon (or wrap Jupiter-style routing off-chain and have contract perform approve + transfer). For Neon, use existing DEX or a simple swap contract that the backend calls. |
-| 2.4.2 | Slippage & limits | Enforce `minAmountOut` and/or max slippage in contract so AI cannot override; optionally cap swap size with same AML limits. |
-
-#### 2.5 Deployment & verification
-
-| Step | Task | Details |
-|------|------|--------|
-| 2.5.1 | Deploy order | Deploy `ComplianceRegistry` first, then `AegisFlowVault` (with registry address), then call `registry.setVault(vaultAddress)`. |
-| 2.5.2 | **Deploy with Python** | Use **Python** (not JS): `contracts/deploy.py` compiles with **solcx** and deploys with **web3.py** to Neon Devnet. Writes `deployed.json`; copy addresses to `backend` config (e.g. `.env`). |
-| 2.5.3 | Verification | Verify on NeonScan so judges can inspect. |
-
-**Deliverable:** Solidity contracts deployed on Neon EVM (Solana test chain); backend can read whitelist and limits from contracts.
+**Deliverable:** Anchor program on Solana Devnet; backend (Python) reads config and submits txs via Solana RPC.
 
 ---
 
@@ -133,16 +99,16 @@ Deploy on **Neon EVM Devnet** (Solana test chain for EVM).
 | Step | Task | Details |
 |------|------|--------|
 | 3.1.1 | Project layout | `backend/app/`: `main.py`, `config.py`, `api/`, `services/`, `agents/`, `models/`. |
-| 3.1.2 | Config | Load contract addresses, RPC URLs (Neon + optional Solana), API keys (KYT, etc.) from env. |
+| 3.1.2 | Config | Load SOLANA_RPC_URL, SOLANA_PROGRAM_ID, keypair path, API keys (KYT, etc.) from env. |
 | 3.1.3 | Health & readiness | `/health`, `/ready` (e.g. check RPC and DB if used). |
 
-#### 3.2 Blockchain client (Neon EVM)
+#### 3.2 Blockchain client (Solana)
 
 | Step | Task | Details |
 |------|------|--------|
-| 3.2.1 | Web3 client | Use `web3.py` (or similar) for Neon RPC; connect to ComplianceRegistry and AegisFlowVault. |
-| 3.2.2 | Read helpers | Functions: `is_whitelisted(address)`, `get_limits()`, `get_daily_volume()`, `get_balance(vault)`. |
-| 3.2.3 | Transaction building | Build and sign txs (transfer, swap) with backend wallet; ensure signer is the allowed “AI_AGENT” or operator on-chain. |
+| 3.2.1 | Solana RPC | Use solana/solders for RPC; read ComplianceConfig PDA, submit instructions (whitelist, limits, vault_withdraw). |
+| 3.2.2 | Read helpers | Functions: `is_whitelisted(address)`, `get_limits()`, `get_balance()` (vault lamports). |
+| 3.2.3 | Transaction building | Build and sign Solana txs with backend keypair; authority/ai_agent for vault_withdraw. |
 
 #### 3.3 Compliance service (pre-execution checks)
 
@@ -161,7 +127,7 @@ Deploy on **Neon EVM Devnet** (Solana test chain for EVM).
 | 3.4.2 | Storage | Store in DB (SQLite/Postgres) or encrypted store keyed by transaction signature; API to retrieve by tx hash for compliance dashboard. |
 | 3.4.3 | Generation | When AI or API requests a transfer above threshold, backend generates payload (from authenticated user/org context), stores it, and only then proceeds to build tx; optionally include hash in memo. |
 
-**Deliverable:** FastAPI app that can check KYC/KYT/AML/Travel Rule and build/sign Neon EVM txs.
+**Deliverable:** FastAPI app (Python) that checks KYC/KYT/AML/Travel Rule and builds/signs Solana txs.
 
 ---
 
@@ -187,7 +153,7 @@ Deploy on **Neon EVM Devnet** (Solana test chain for EVM).
 | Step | Task | Details |
 |------|------|--------|
 | 4.3.1 | Proposal → compliance | Backend receives proposal; runs KYC/KYT/AML/Travel Rule; if any check fails, return error to agent (and log). |
-| 4.3.2 | Execution | If passed: build Neon EVM tx (transfer or swap), sign, broadcast; store tx hash and link Travel Rule if applicable. |
+| 4.3.2 | Execution | If passed: build Solana tx (vault_withdraw or swap), sign, broadcast; store tx hash and link Travel Rule if applicable. |
 | 4.3.3 | Audit | Log every proposal and outcome (allowed/denied, reason, tx hash) for dashboard. |
 
 **Deliverable:** AI agent that proposes treasury/FX actions; backend enforces sandbox and executes only compliant txs.
@@ -198,7 +164,7 @@ Deploy on **Neon EVM Devnet** (Solana test chain for EVM).
 
 | Step | Task | Details |
 |------|------|--------|
-| 5.1 | Jupiter (or Neon DEX) | Backend calls Jupiter API (or Neon DEX) for swap route; build tx that calls your Swap adapter or router; enforce slippage in contract. |
+| 5.1 | Jupiter | Backend calls Jupiter API for swap route; build Solana tx; enforce slippage and limits. |
 | 5.2 | KYT | Integrate Chainalysis/Elliptic API or mock: input address + amount, return risk score; block if above threshold. |
 | 5.3 | Fireblocks-style | Emulate multi-sig: e.g. “sensitive” actions (limit change, whitelist) require second approval (mock: second API key or manual step in dashboard). |
 | 5.4 | FX feed | Use public API or mock for USDC/EURC rates so agent has data to decide. |
@@ -242,7 +208,7 @@ A **well-developed, user-friendly Flask web app** where users (compliance office
 | Step | Task | Details |
 |------|------|--------|
 | 6.4.1 | Transfer page | Form: recipient (dropdown of whitelisted or address input with live whitelist check), amount, token (USDC/EURC), optional memo. For amounts ≥ Travel Rule threshold: **Travel Rule form** (originator, beneficiary, VASP info) inline. Submit → backend runs KYC/KYT/AML/Travel Rule, then executes. Show tx hash and status. |
-| 6.4.2 | Swap (FX) page | Form: from token, to token, amount, max slippage. Preview (e.g. "You will receive ~X EURC"). Submit → backend routes via Jupiter/Neon DEX, enforces limits, executes. Display result and tx link. |
+| 6.4.2 | Swap (FX) page | Form: from token, to token, amount, max slippage. Submit → backend routes via Jupiter, enforces limits, executes. Display result and tx link. |
 | 6.4.3 | Validation & errors | Client-side validation (amount > 0, valid address); server-side errors (e.g. "Recipient not whitelisted", "Daily limit exceeded") shown clearly with suggested actions. |
 
 #### 6.5 AI agent control & treasury
@@ -291,13 +257,13 @@ A **well-developed, user-friendly Flask web app** where users (compliance office
 
 | Step | Task | Details |
 |------|------|--------|
-| 7.1 | Unit tests (contracts) | Hardhat: whitelist allow/deny, limit enforcement, role access. |
+| 7.1 | Unit tests (program) | Anchor/Solana: whitelist allow/deny, limit enforcement, role access. |
 | 7.2 | Unit tests (backend) | Pytest: compliance service (mock contract), Travel Rule generation, agent output parsing. |
 | 7.3 | Webapp tests | Flask test client or pytest: login, role-based redirects, form validation; optional E2E (e.g. Playwright) for critical flows (whitelist, transfer, audit). |
 | 7.4 | Integration | E2E: agent proposes → backend checks → contract reverts if non-whitelisted; then whitelist and retry → success; verify audit log and Travel Rule in webapp. |
 | 7.5 | Security | No secrets in repo; env-based keys; rate limiting on API and webapp; input validation on all endpoints and forms; CSRF protection (Flask-WTF). |
 
-**Deliverable:** Test suite and at least one E2E flow on Neon Devnet.
+**Deliverable:** Test suite and at least one E2E flow on Solana Devnet.
 
 ---
 
@@ -305,7 +271,7 @@ A **well-developed, user-friendly Flask web app** where users (compliance office
 
 | Step | Task | Details |
 |------|------|--------|
-| 8.1 | Contracts | Deploy to Neon EVM Devnet (Solana test chain); document addresses and NeonScan links. |
+| 8.1 | Program | Deploy to Solana Devnet; document program ID and Explorer links. |
 | 8.2 | Backend | Run as service (e.g. Docker); use env for RPC, contract addresses, API keys. |
 | 8.3 | Webapp | Run Flask app (e.g. Gunicorn in production); ensure it talks to backend API; document login and role-based access. |
 | 8.4 | Demo script | 1) Log in to webapp; 2) Add/remove whitelist; 3) Set AML limits; 4) Submit transfer (with Travel Rule for large amount); 5) Run AI agent and show proposals; 6) View audit log and Travel Rule by tx hash; 7) Show blocked non-whitelisted attempt. |
@@ -319,8 +285,8 @@ A **well-developed, user-friendly Flask web app** where users (compliance office
 
 ```
 AegisFlow/
-├── contracts/                    # Solidity (Neon EVM)
-│   ├── contracts/
+├── contracts-solana/             # Anchor (Solana)
+│   ├── programs/
 │   │   ├── ComplianceRegistry.sol
 │   │   ├── AegisFlowVault.sol
 │   │   └── AegisFlowSwap.sol     # optional
@@ -383,17 +349,17 @@ AegisFlow/
 
 | Requirement | Where enforced | How |
 |-------------|----------------|------|
-| **KYC** | On-chain (Solidity) | Transfer/withdraw only to `ComplianceRegistry` whitelist; backend checks before building tx. |
-| **KYT** | Backend + optional on-chain | Backend calls KYT API; if high risk, backend does not sign; optionally store risk result on-chain or in audit log. |
-| **AML** | On-chain (Solidity) | `maxPerTx`, `maxDailyVolume` in contract; revert if exceeded; backend checks first. |
+| **KYC** | On-chain (Anchor) | Transfer only to whitelist (ComplianceConfig); backend checks before building tx. |
+| **KYT** | Backend + optional | Backend calls KYT API; if high risk, backend does not sign; store result in audit log. |
+| **AML** | On-chain (Anchor) | `max_per_tx`, `max_daily_volume` in program; revert if exceeded; backend checks first. |
 | **Travel Rule** | Backend + storage | Backend generates and stores payload for txs above threshold; dashboard shows by tx hash; optional hash in memo. |
 
 ---
 
 ## 6. Success Criteria for MVP
 
-- [ ] Solidity contracts deployed on Neon EVM (Solana test chain).
-- [ ] Python backend: compliance checks (KYC/KYT/AML/Travel Rule) and tx building/signing for Neon.
+- [ ] Anchor program deployed on Solana Devnet.
+- [ ] Python backend: compliance checks (KYC/KYT/AML/Travel Rule) and tx building/signing for Solana.
 - [ ] AI agent proposes treasury/FX actions; execution only after passing all checks.
 - [ ] At least one E2E flow: compliant transfer and one blocked (e.g. non-whitelisted) with clear revert/error.
 - [ ] Travel Rule payload generated and retrievable for a transfer above threshold.
@@ -404,10 +370,9 @@ AegisFlow/
 
 ## 7. References
 
-- **Neon EVM on Solana:** https://neonevm.org/docs/developing/get-started  
-- **Hardhat + Neon:** https://neonevm.org/docs/developing/deploy_facilities/using_hardhat  
-- **StableHacks 2026:** description.md (tracks, prerequisites), solution.md (AegisFlow concept).  
-- **Token Extensions (future):** If moving to native Solana SPL tokens, implement Transfer Hooks in an Anchor program and keep this Solidity layer for Neon-based flows or bridge logic.
+- **Solana:** https://docs.solana.com/  
+- **Anchor:** https://www.anchor-lang.com/  
+- **StableHacks 2026:** description.md (tracks, prerequisites), solution.md (AegisFlow concept).
 
 ---
 

@@ -8,30 +8,20 @@ def run_once() -> dict:
     """One iteration: fetch limits/balance, apply rules, optionally call LLM, append proposals."""
     settings = get_settings()
     limits = get_limits()
-    # Mock balance for MVP (would be vault balance in production)
-    balance = 0
-    try:
-        from app.services.blockchain import get_vault_contract
-        w3 = __import__("app.services.blockchain", fromlist=["get_web3"]).get_web3()
-        if settings.private_key:
-            acc = w3.eth.account.from_key(settings.private_key)
-            balance = get_balance(acc.address)
-    except Exception:
-        pass
+    # Vault PDA balance (Solana: lamports)
+    balance = get_balance("")
 
     proposals = []
-    # Rule: if daily remaining is high, could propose a rebalance (mock)
     max_per_tx = limits.get("maxPerTx", 0)
     daily_used = limits.get("dailyVolumeUsed", 0)
     daily_max = limits.get("maxDailyVolume", 0)
     daily_remaining = max(0, daily_max - daily_used)
 
     if daily_remaining > 0 and max_per_tx > 0:
-        # Placeholder proposal
         proposal = {
             "action": "transfer",
             "amount": str(min(daily_remaining, max_per_tx) // 2),
-            "recipient": "0x0000000000000000000000000000000000000001",
+            "recipient": "11111111111111111111111111111111",
             "reason": "Treasury rebalance (mock rule)",
             "status": "pending",
         }

@@ -56,9 +56,20 @@ def execute_transfer(req: TransferRequest, db: Session = Depends(get_db)):
         )
         store_for_tx(db, "pending_" + req.to_address[:10], travel_payload)
 
+    # Solana: execute vault_withdraw when keypair configured (lamports = amount_int)
+    from app.services import blockchain_solana
+    sig = blockchain_solana.vault_withdraw(req.to_address, amount_int)
+    if sig:
+        log(db, "transfer", req.from_address, amount=amount_int, counterparty=req.to_address, status="success", metadata={"travel_rule": travel_payload is not None, "signature": sig})
+        return {
+            "ok": True,
+            "message": "Transfer executed on Solana",
+            "signature": sig,
+            "travel_rule_payload": travel_payload,
+        }
     log(db, "transfer", req.from_address, amount=amount_int, counterparty=req.to_address, status="success", metadata={"travel_rule": travel_payload is not None})
     return {
         "ok": True,
-        "message": "Compliance passed. Configure backend signer to submit tx.",
+        "message": "Compliance passed. Set SOLANA_KEYPAIR_PATH or SOLANA_PRIVATE_KEY to execute on-chain.",
         "travel_rule_payload": travel_payload,
     }

@@ -13,13 +13,6 @@ __pycache__/
 dist/
 build/
 
-# Node
-node_modules/
-contracts/node_modules/
-contracts/cache/
-contracts/artifacts/
-contracts/deployed.json
-
 # IDE
 .idea/
 .vscode/
