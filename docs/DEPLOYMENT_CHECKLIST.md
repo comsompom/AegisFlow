@@ -4,6 +4,18 @@ Hackathon requirement: **build on Solana**. This project uses **native Solana** 
 
 ---
 
+## Deploy all and verify (summary)
+
+1. **Install tools (once):** Rust, [Solana CLI](https://docs.solana.com/cli/install), [Anchor CLI](https://www.anchor-lang.com/docs/installation). On Windows: use WSL (Ubuntu) and run the [one-line Solana install](https://solana.com/docs/intro/installation) (installs Solana + Anchor), or install Rust (e.g. `winget install Rustlang.Rustup`) then Solana CLI and `cargo install anchor-cli`.
+2. **Deploy program:** From repo root run `.\scripts\deploy_solana_devnet.ps1` (or run the commands in Step 1 below manually).
+3. **Backend .env:** Set `SOLANA_PROGRAM_ID`, `SOLANA_RPC_URL`, and `SOLANA_KEYPAIR_PATH` (or `SOLANA_PRIVATE_KEY`).
+4. **Initialize program (once):** `cd backend && python -m scripts.init_solana_program`
+5. **Start backend:** `cd backend && uvicorn app.main:app --host 0.0.0.0 --port 8000`
+6. **Start webapp:** `cd webapp && flask run` → open http://localhost:5000
+7. **Verify:** `.\scripts\verify_stack.ps1` (checks backend imports; if server is running, checks `/health`).
+
+---
+
 ## Required env
 
 | Location | Required | Optional |

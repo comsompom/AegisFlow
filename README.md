@@ -42,6 +42,16 @@ cd AegisFlow
 
 ### 2. Deploy program to Solana Devnet
 
+**Prereq:** Install [Rust](https://rustup.rs/), [Solana CLI](https://docs.solana.com/cli/install), [Anchor CLI](https://www.anchor-lang.com/docs/installation). On Windows, WSL (Ubuntu) is recommended; see [Deployment checklist](docs/DEPLOYMENT_CHECKLIST.md).
+
+From repo root (PowerShell):
+
+```powershell
+.\scripts\deploy_solana_devnet.ps1
+```
+
+Or manually:
+
 ```bash
 cd contracts-solana
 solana config set --url devnet
