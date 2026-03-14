@@ -3,7 +3,7 @@
 
 use anchor_lang::prelude::*;
 
-declare_id!("AegisF1ow11111111111111111111111111111111");
+declare_id!("AegisF1ow11111111111111111111111111111111111");
 
 const MAX_LIST_LEN: usize = 64;
 const SECONDS_PER_DAY: i64 = 86400;

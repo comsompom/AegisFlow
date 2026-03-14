@@ -16,13 +16,13 @@ To deploy the Anchor program from Windows you need **Solana CLI** and **Anchor C
    ```bash
    sh -c "$(curl -sSfL https://release.anza.xyz/stable/install)"
    ```
-   Then install Anchor (e.g. via AVM):
+   Then install Anchor. **Prefer AVM** (avoids broken 0.30.1 cargo install):
    ```bash
-   cargo install --git https://github.com/coral-xyz/anchor avm --locked --force
+   cargo install --git https://github.com/coral-xyz/anchor avm --force
    avm install latest
    avm use latest
    ```
-   Or follow the official [Anchor installation](https://www.anchor-lang.com/docs/installation) for Linux.
+   If you need 0.30.x specifically, try: `cargo install --git https://github.com/coral-xyz/anchor --tag v0.30.1 anchor-cli` (without `--locked`).
 
 3. **Clone or open the repo in WSL** (e.g. project under `~/AegisFlow` or `/mnt/c/Users/obourdo/AegisFlow`).
 
@@ -55,9 +55,16 @@ To deploy the Anchor program from Windows you need **Solana CLI** and **Anchor C
    ```
    Close and reopen your terminal after install.
 
-2. **Install Anchor CLI** (Rust is already installed):
+2. **Install Anchor CLI** (Rust + VS Build Tools already installed).  
+   Option 2a — **without --locked** (often fixes "failed to compile" with 0.30.1):
    ```powershell
-   cargo install --git https://github.com/coral-xyz/anchor --tag v0.30.1 anchor-cli --locked
+   cargo install --git https://github.com/coral-xyz/anchor --tag v0.30.1 anchor-cli
+   ```
+   Option 2b — **use AVM** (install latest Anchor; then use a matching program version if needed):
+   ```powershell
+   cargo install --git https://github.com/coral-xyz/anchor avm --force
+   avm install latest
+   avm use latest
    ```
 
 3. **Install Solana CLI for Windows**:
@@ -71,6 +78,23 @@ To deploy the Anchor program from Windows you need **Solana CLI** and **Anchor C
    ```
 
 5. Set **SOLANA_PROGRAM_ID** in `backend\.env`, then run **init** (step 6 in Option A).
+
+---
+
+## Troubleshooting
+
+**"failed to compile anchor-cli v0.30.1" / anchor-syn warnings**  
+- Install **without** `--locked` so Cargo can use non-yanked dependency versions:
+  ```powershell
+  cargo install --git https://github.com/coral-xyz/anchor --tag v0.30.1 anchor-cli
+  ```
+- If the build still fails at the end (e.g. only warnings from `anchor-syn` / `anchor-lang`), **allow warnings** so the install can complete:
+  ```powershell
+  $env:RUSTFLAGS="-A warnings"
+  cargo install --git https://github.com/coral-xyz/anchor --tag v0.30.1 anchor-cli
+  ```
+- Or use **AVM** and latest Anchor (Option 2b above); if the program was written for 0.30.x, it usually still builds with a newer CLI.
+- On Windows, ensure **Visual Studio 2022 Build Tools** with the **C++ workload** is installed so `link.exe` is available.
 
 ---
 
