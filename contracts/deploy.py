@@ -75,7 +75,8 @@ def deploy():
     if private_key.startswith("0x"):
         private_key = private_key[2:]
 
-    w3 = Web3(Web3.HTTPProvider(rpc_url))
+    # Neon Devnet can be slow; use longer timeouts
+    w3 = Web3(Web3.HTTPProvider(rpc_url, request_kwargs={"timeout": 120}))
     if not w3.is_connected():
         print(f"Cannot connect to {rpc_url}", file=sys.stderr)
         sys.exit(1)
@@ -115,7 +116,7 @@ def deploy():
     )
     signed = w3.eth.account.sign_transaction(tx, account.key)
     tx_hash = w3.eth.send_raw_transaction(signed.raw_transaction)
-    receipt = w3.eth.wait_for_transaction_receipt(tx_hash)
+    receipt = w3.eth.wait_for_transaction_receipt(tx_hash, timeout=120)
     registry_address = receipt["contractAddress"]
     print(f"ComplianceRegistry: {registry_address}")
 
@@ -131,7 +132,7 @@ def deploy():
     )
     signed2 = w3.eth.account.sign_transaction(tx2, account.key)
     tx_hash2 = w3.eth.send_raw_transaction(signed2.raw_transaction)
-    receipt2 = w3.eth.wait_for_transaction_receipt(tx_hash2)
+    receipt2 = w3.eth.wait_for_transaction_receipt(tx_hash2, timeout=120)
     vault_address = receipt2["contractAddress"]
     print(f"AegisFlowVault: {vault_address}")
 
@@ -147,7 +148,7 @@ def deploy():
     )
     signed3 = w3.eth.account.sign_transaction(tx3, account.key)
     tx_hash3 = w3.eth.send_raw_transaction(signed3.raw_transaction)
-    w3.eth.wait_for_transaction_receipt(tx_hash3)
+    w3.eth.wait_for_transaction_receipt(tx_hash3, timeout=120)
 
     chain_id = w3.eth.chain_id
     output = {
