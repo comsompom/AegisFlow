@@ -1,5 +1,9 @@
 # AegisFlow
 
+<p align="center">
+  <img src="aegis_flow_logo.png" alt="AegisFlow Logo" width="160" />
+</p>
+
 **Track 3: Programmable Stablecoin Payments** — StableHacks 2026
 
 An AI-orchestrated, permissioned stablecoin payment and treasury router on Solana. AegisFlow uses AI agents to autonomously execute FX conversions, cross-border settlements, and treasury rebalancing within a **deterministic, smart-contract-enforced compliance sandbox** (KYC, KYT, AML, Travel Rule).
@@ -10,12 +14,12 @@ An AI-orchestrated, permissioned stablecoin payment and treasury router on Solan
 
 ```
 AegisFlow/
+├── aegis_flow_logo.png # App logo
 ├── contracts/          # Solidity smart contracts (Neon EVM on Solana)
 ├── backend/            # Python FastAPI — compliance, AI agent, blockchain client
 ├── webapp/             # Flask web application — institutional control room UI
-├── docs/               # development_plan.md, description, solution
-├── README.md
-└── DEMO_VIDEO_GUIDE.md # Guide for recording the hackathon demo video
+├── docs/               # development_plan, description, solution
+└── README.md
 ```
 
 ---
@@ -114,7 +118,6 @@ cd ..
 ## Documentation
 
 - [Development plan](development_plan.md) — full implementation plan
-- [Demo video guide](DEMO_VIDEO_GUIDE.md) — how to record the 3-minute hackathon video
 - [Solution concept](solution.md) — AegisFlow concept and compliance sandbox
 - [Hackathon description](description.md) — StableHacks 2026 tracks and rules
 
