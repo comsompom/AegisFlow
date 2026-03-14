@@ -58,6 +58,8 @@ overflow-checks = true
 
 **"no such command: build-sbf"**: Anchor needs the Solana build toolchain. Either install the full **Solana CLI** (see below), or run `cargo install solana-cargo-build-sbf`, **close and reopen your terminal**, then run `anchor build` again. You still need the **Solana CLI** for `anchor deploy` (keypair, config, airdrop).
 
+**"Failed to install platform-tools: A required privilege is not held by the client. (os error 1314)"**: On native Windows, `cargo-build-sbf` may need to create symlinks and can fail without admin rights. **Use WSL (Option A)** and run the deploy from Ubuntu, or run your terminal/PowerShell **as Administrator** and retry.
+
 ---
 
 ## Option B: Native Windows (Rust + VS Build Tools)

@@ -6,8 +6,8 @@ Hackathon requirement: **build on Solana**. This project uses **native Solana** 
 
 ## Deploy all and verify (summary)
 
-1. **Install tools (once):** Rust, [Solana CLI](https://docs.solana.com/cli/install), [Anchor CLI](https://www.anchor-lang.com/docs/installation). **On Windows:** see **[docs/DEPLOY_WINDOWS.md](DEPLOY_WINDOWS.md)** — use WSL (Ubuntu) or VS Build Tools + Solana CLI.
-2. **Deploy program:** From repo root run `.\scripts\deploy_solana_devnet.ps1` (or run the commands in Step 1 below manually).
+1. **Install tools (once):** Rust, [Solana CLI](https://docs.solana.com/cli/install), [Anchor CLI](https://www.anchor-lang.com/docs/installation). **On Windows:** see **[docs/DEPLOY_WINDOWS.md](DEPLOY_WINDOWS.md)** — use WSL (Ubuntu) or run the Agave installer **as Administrator** once so `anchor build` can install platform-tools; the deploy script will use Solana from `%LOCALAPPDATA%\solana\solana-release\bin` if present.
+2. **Deploy program:** From repo root run `.\scripts\deploy_solana_devnet.ps1` (or run the commands in Step 1 below manually). If you get a platform-tools privilege error on Windows, run PowerShell **as Administrator** and run: `& "$env:LOCALAPPDATA\solana-install-tmp\agave-install-init.exe" v3.1.10` (then restart terminal and retry), or deploy from WSL.
 3. **Backend .env:** Set `SOLANA_PROGRAM_ID`, `SOLANA_RPC_URL`, and `SOLANA_KEYPAIR_PATH` (or `SOLANA_PRIVATE_KEY`).
 4. **Initialize program (once):** `cd backend && python -m scripts.init_solana_program`
 5. **Start backend:** `cd backend && uvicorn app.main:app --host 0.0.0.0 --port 8000`

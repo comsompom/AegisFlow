@@ -6,6 +6,12 @@ $ErrorActionPreference = "Stop"
 $root = Split-Path -Parent $PSScriptRoot
 if (-not $root) { $root = (Get-Location).Path }
 
+# Prepend extracted Solana bin if present (e.g. from solana-release tar.bz2 in LocalAppData)
+$solanaBin = "$env:LOCALAPPDATA\solana\solana-release\bin"
+if (Test-Path (Join-Path $solanaBin "solana.exe")) {
+    $env:PATH = "$solanaBin;$env:PATH"
+}
+
 Write-Host "=== AegisFlow Solana Devnet deploy ===" -ForegroundColor Cyan
 Write-Host ""
 
@@ -17,7 +23,8 @@ try { $null = Get-Command solana -ErrorAction Stop; $solanaOk = $true } catch {}
 
 if (-not $solanaOk) {
     Write-Host "Solana CLI not found. Install: https://docs.solana.com/cli/install" -ForegroundColor Yellow
-    Write-Host "On Windows you may need WSL (Ubuntu) and run: curl ... solana-install ... | bash" -ForegroundColor Yellow
+    Write-Host "Or extract solana-release to $env:LOCALAPPDATA\solana\ and re-run." -ForegroundColor Yellow
+    Write-Host "On Windows, if anchor build fails with privilege error, use WSL (see docs/DEPLOY_WINDOWS.md)." -ForegroundColor Yellow
     exit 1
 }
 if (-not $anchorOk) {
