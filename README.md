@@ -13,10 +13,11 @@ An AI-orchestrated, permissioned stablecoin payment and treasury router on Solan
 ```
 AegisFlow/
 ├── aegis_flow_logo.png # App logo
-├── contracts/          # Solidity smart contracts (Neon EVM on Solana)
+├── contracts/          # Solidity smart contracts (Neon EVM on Solana) — optional
+├── contracts-solana/   # Native Solana (Anchor/Rust) — deploy to Solana Devnet (recommended)
 ├── backend/            # Python FastAPI — compliance, AI agent, blockchain client
 ├── webapp/             # Flask web application — institutional control room UI
-├── docs/               # development_plan, description, solution
+├── docs/               # development_plan, solution, SOLANA_VS_NEON
 └── README.md
 ```
 
@@ -24,9 +25,9 @@ AegisFlow/
 
 ## Prerequisites
 
-- **Python** 3.11+ and **pip** (for contracts deployment, backend, and webapp)
-- **Node.js** 18+ and **npm** (optional — for Hardhat compile/test only)
-- **MetaMask** (or any Ethereum wallet): you will use its **private key** for deploying contracts and for the backend. Add [Neon EVM Devnet](https://neonfaucet.org) and get test NEON. See [Wallet & private keys](docs/WALLET_AND_KEYS.md) for where to get the key and where to put it.
+- **Python** 3.11+ and **pip** (for backend and webapp; also for Neon contract deploy if using Option B)
+- **For native Solana (Option A):** Rust, [Solana CLI](https://docs.solana.com/cli/install), [Anchor CLI](https://www.anchor-lang.com/docs/installation); Solana wallet (e.g. Phantom) or `solana-keygen` for deploy
+- **For Neon EVM (Option B):** Node.js 18+ (optional), **MetaMask** and private key; add [Neon EVM Devnet](https://neonfaucet.org). See [Wallet & private keys](docs/WALLET_AND_KEYS.md)
 - **OpenAI API key** (optional, for AI treasury agent)
 
 ---
@@ -40,7 +41,22 @@ git clone <repo-url>
 cd AegisFlow
 ```
 
-### 2. Smart contracts (Neon EVM) — deploy with Python
+### 2. Smart contracts
+
+**Option A — Native Solana (recommended):** Deploy to Solana Devnet (no Neon).
+
+```bash
+cd contracts-solana
+# Install: Rust, Solana CLI, Anchor CLI (see contracts-solana/README.md)
+solana config set --url devnet
+solana airdrop 2
+anchor build
+anchor deploy --provider.cluster devnet
+# Use the program ID and ComplianceConfig PDA in backend .env (see docs/SOLANA_VS_NEON.md)
+cd ..
+```
+
+**Option B — Neon EVM (Solidity):** Uses Neon’s Devnet (can be slow).
 
 ```bash
 cd contracts
@@ -50,7 +66,7 @@ pip install -r requirements.txt
 cp .env.example .env
 # Edit .env: set PRIVATE_KEY, NEON_RPC_URL (e.g. https://devnet.neonevm.org)
 python deploy.py
-# Addresses written to deployed.json — copy to backend .env (COMPLIANCE_REGISTRY_ADDRESS, AEGISFLOW_VAULT_ADDRESS)
+# Addresses in deployed.json → backend .env (COMPLIANCE_REGISTRY_ADDRESS, AEGISFLOW_VAULT_ADDRESS)
 cd ..
 ```
 

@@ -8,6 +8,7 @@ Requires: .env with PRIVATE_KEY and optionally NEON_RPC_URL.
 import json
 import os
 import sys
+import time
 from pathlib import Path
 
 from dotenv import load_dotenv
@@ -17,6 +18,12 @@ load_dotenv()
 # Default limits (18 decimals): 1M per tx, 10M daily
 DEFAULT_MAX_PER_TX = 1_000_000 * 10**18
 DEFAULT_MAX_DAILY = 10_000_000 * 10**18
+
+# RPC timeouts and retries (Neon Devnet can be slow)
+RPC_TIMEOUT = 300
+RECEIPT_TIMEOUT = 300
+MAX_RETRIES = 5
+RETRY_DELAY = 45
 
 
 def _ensure_solc():
@@ -62,6 +69,25 @@ def compile_contracts(contracts_dir: Path):
     }
 
 
+def _send_and_wait(w3, signed_tx, step_name: str):
+    """Send raw transaction and wait for receipt with retries."""
+    for attempt in range(1, MAX_RETRIES + 1):
+        try:
+            print(f"  Attempt {attempt}/{MAX_RETRIES}...", flush=True)
+            tx_hash = w3.eth.send_raw_transaction(signed_tx.raw_transaction)
+            receipt = w3.eth.wait_for_transaction_receipt(tx_hash, timeout=RECEIPT_TIMEOUT)
+            return receipt
+        except Exception as e:
+            err = str(e).split("\n")[0] if "\n" in str(e) else str(e)
+            print(f"  Error: {err}", flush=True)
+            if attempt < MAX_RETRIES:
+                print(f"  Retrying in {RETRY_DELAY}s...", flush=True)
+                time.sleep(RETRY_DELAY)
+            else:
+                raise
+    raise RuntimeError("Max retries exceeded")
+
+
 def deploy():
     from web3 import Web3
 
@@ -75,8 +101,8 @@ def deploy():
     if private_key.startswith("0x"):
         private_key = private_key[2:]
 
-    # Neon Devnet can be slow; use longer timeouts
-    w3 = Web3(Web3.HTTPProvider(rpc_url, request_kwargs={"timeout": 120}))
+    # Neon Devnet can be slow; use long timeouts
+    w3 = Web3(Web3.HTTPProvider(rpc_url, request_kwargs={"timeout": RPC_TIMEOUT}))
     if not w3.is_connected():
         print(f"Cannot connect to {rpc_url}", file=sys.stderr)
         sys.exit(1)
@@ -115,8 +141,7 @@ def deploy():
         }
     )
     signed = w3.eth.account.sign_transaction(tx, account.key)
-    tx_hash = w3.eth.send_raw_transaction(signed.raw_transaction)
-    receipt = w3.eth.wait_for_transaction_receipt(tx_hash, timeout=120)
+    receipt = _send_and_wait(w3, signed, "ComplianceRegistry")
     registry_address = receipt["contractAddress"]
     print(f"ComplianceRegistry: {registry_address}")
 
@@ -131,8 +156,7 @@ def deploy():
         }
     )
     signed2 = w3.eth.account.sign_transaction(tx2, account.key)
-    tx_hash2 = w3.eth.send_raw_transaction(signed2.raw_transaction)
-    receipt2 = w3.eth.wait_for_transaction_receipt(tx_hash2, timeout=120)
+    receipt2 = _send_and_wait(w3, signed2, "AegisFlowVault")
     vault_address = receipt2["contractAddress"]
     print(f"AegisFlowVault: {vault_address}")
 
@@ -147,8 +171,7 @@ def deploy():
         }
     )
     signed3 = w3.eth.account.sign_transaction(tx3, account.key)
-    tx_hash3 = w3.eth.send_raw_transaction(signed3.raw_transaction)
-    w3.eth.wait_for_transaction_receipt(tx_hash3, timeout=120)
+    _send_and_wait(w3, signed3, "setVault")
 
     chain_id = w3.eth.chain_id
     output = {

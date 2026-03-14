@@ -24,7 +24,9 @@ An AI-orchestrated, permissioned stablecoin payment and treasury router on Solan
 | FX / swaps | Jupiter API (or mock) | Solana mainnet or testnet as needed |
 | Custody / multi-sig (emulated) | Fireblocks-style flows | Backend + config |
 
-**Note on Solidity on Solana:** Solidity contracts run on **Neon EVM**, which is an EVM runtime on Solana. Token Extensions (Transfer Hooks) are a **native Solana (SPL Token-2022)** feature. This plan uses Solidity on Neon for the core compliance and vault logic; equivalent behavior (whitelists, transfer checks, limits) is implemented in Solidity. A future phase can add an Anchor program with Token Extensions for SPL-native stablecoins if required.
+**Note on Solidity on Solana:** Solidity contracts run on **Neon EVM**, which is an EVM runtime on Solana. Token Extensions (Transfer Hooks) are a **native Solana (SPL Token-2022)** feature. This plan uses Solidity on Neon for the core compliance and vault logic; equivalent behavior (whitelists, transfer checks, limits) is implemented in Solidity.
+
+**Native Solana (recommended for hackathon):** To avoid Neon’s slow/unreliable Devnet RPC and align with “built on Solana,” use the **native Solana (Anchor)** program in **`contracts-solana/`**. It implements the same compliance registry (whitelist, blacklist, limits) in **Rust/Anchor**, deploys to **Solana Devnet** with `anchor deploy --provider.cluster devnet`, and uses Solana’s standard RPC (`api.devnet.solana.com`). See [docs/SOLANA_VS_NEON.md](docs/SOLANA_VS_NEON.md) and `contracts-solana/README.md`.
 
 ---
 
