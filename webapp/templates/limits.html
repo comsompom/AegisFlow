@@ -1,0 +1,45 @@
+{% extends "base.html" %}
+{% block title %}AML Limits — AegisFlow{% endblock %}
+{% block content %}
+<div class="page-header">
+    <div class="header-icon"><i class="bi bi-graph-up"></i></div>
+    <h1>AML Limits</h1>
+    <p class="subtitle mb-0">View and update maximum per-transaction and daily volume limits. Enforced on-chain.</p>
+</div>
+<div class="row g-4">
+    <div class="col-lg-6">
+        <div class="card card-aegis h-100">
+            <div class="card-header"><i class="bi bi-info-circle"></i> Current limits</div>
+            <div class="card-body">
+                <dl class="row mb-0">
+                    <dt class="col-sm-5 text-muted fw-normal">Max per tx</dt>
+                    <dd class="col-sm-7 fw-semibold">{{ limits.get('maxPerTx', 0) }}</dd>
+                    <dt class="col-sm-5 text-muted fw-normal">Max daily volume</dt>
+                    <dd class="col-sm-7 fw-semibold">{{ limits.get('maxDailyVolume', 0) }}</dd>
+                    <dt class="col-sm-5 text-muted fw-normal">Daily used</dt>
+                    <dd class="col-sm-7 fw-semibold">{{ limits.get('dailyVolumeUsed', 0) }}</dd>
+                </dl>
+            </div>
+        </div>
+    </div>
+    <div class="col-lg-6">
+        <div class="card card-aegis">
+            <div class="card-header"><i class="bi bi-pencil-square"></i> Update limits</div>
+            <div class="card-body">
+                <form method="post" action="{{ url_for('limits.update') }}">
+                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                    <div class="mb-3">
+                        <label class="form-label">Max per transaction (wei/units)</label>
+                        <input type="text" name="max_per_tx" class="form-control" value="{{ limits.get('maxPerTx', '') }}" required>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Max daily volume (wei/units)</label>
+                        <input type="text" name="max_daily_volume" class="form-control" value="{{ limits.get('maxDailyVolume', '') }}" required>
+                    </div>
+                    <button type="submit" class="btn btn-aegis"><i class="bi bi-check-lg me-1"></i>Update</button>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

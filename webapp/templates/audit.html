@@ -1,0 +1,41 @@
+{% extends "base.html" %}
+{% block title %}Audit Log — AegisFlow{% endblock %}
+{% block content %}
+<div class="page-header">
+    <div class="header-icon"><i class="bi bi-journal-text"></i></div>
+    <h1>Audit Log</h1>
+    <p class="subtitle mb-0">All actions and transaction outcomes.</p>
+</div>
+<div class="card card-aegis">
+    <div class="card-body p-0">
+        {% if entries %}
+        <div class="table-responsive">
+            <table class="table table-aegis mb-0">
+                <thead>
+                    <tr><th>Time</th><th>Action</th><th>Actor</th><th>Amount</th><th>Counterparty</th><th>Status</th><th>Tx hash</th><th>Reason</th></tr>
+                </thead>
+                <tbody>
+                {% for e in entries %}
+                <tr>
+                    <td class="small">{{ e.get('timestamp', '—') }}</td>
+                    <td><span class="badge bg-light text-dark">{{ e.get('action', '—') }}</span></td>
+                    <td>{{ e.get('actor', '—') }}</td>
+                    <td>{{ e.get('amount') or '—' }}</td>
+                    <td class="font-monospace small">{{ e.get('counterparty') or '—' }}</td>
+                    <td><span class="badge {% if e.get('status') == 'success' %}bg-success{% else %}bg-danger{% endif %}">{{ e.get('status', '—') }}</span></td>
+                    <td class="font-monospace small">{{ e.get('tx_hash') or '—' }}</td>
+                    <td class="small">{{ e.get('reason') or '—' }}</td>
+                </tr>
+                {% endfor %}
+                </tbody>
+            </table>
+        </div>
+        {% else %}
+        <div class="p-4 text-center text-muted">
+            <i class="bi bi-inbox display-6 d-block mb-2"></i>
+            No audit entries yet.
+        </div>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}

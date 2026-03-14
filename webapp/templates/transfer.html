@@ -1,0 +1,44 @@
+{% extends "base.html" %}
+{% block title %}Transfer — AegisFlow{% endblock %}
+{% block content %}
+<div class="page-header">
+    <div class="header-icon"><i class="bi bi-send"></i></div>
+    <h1>Transfer</h1>
+    <p class="subtitle mb-0">Submit a stablecoin transfer. Recipient must be whitelisted. Transfers above the Travel Rule threshold require originator/beneficiary data.</p>
+</div>
+<div class="card card-aegis">
+    <div class="card-body">
+        <form method="post" action="{{ url_for('transfers.execute') }}">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+            <div class="row g-3">
+                <div class="col-md-6">
+                    <label class="form-label">From address (optional)</label>
+                    <input type="text" name="from_address" class="form-control font-monospace" placeholder="0x...">
+                </div>
+                <div class="col-md-6">
+                    <label class="form-label">To address (recipient) <span class="text-danger">*</span></label>
+                    <input type="text" name="to_address" class="form-control font-monospace" placeholder="0x..." required>
+                </div>
+            </div>
+            <div class="mt-3">
+                <label class="form-label">Amount (wei/units) <span class="text-danger">*</span></label>
+                <input type="text" name="amount" class="form-control" placeholder="1000000000000000000" required>
+            </div>
+            <p class="small text-muted mt-3 mb-2"><i class="bi bi-info-circle me-1"></i>Travel Rule: for amounts above threshold, fill the fields below.</p>
+            <div class="row g-3">
+                <div class="col-md-6">
+                    <label class="form-label">Originator name</label>
+                    <input type="text" name="originator_name" class="form-control" placeholder="Institution name">
+                </div>
+                <div class="col-md-6">
+                    <label class="form-label">Beneficiary name</label>
+                    <input type="text" name="beneficiary_name" class="form-control" placeholder="Beneficiary name">
+                </div>
+            </div>
+            <div class="mt-4">
+                <button type="submit" class="btn btn-aegis"><i class="bi bi-send me-1"></i>Submit transfer</button>
+            </div>
+        </form>
+    </div>
+</div>
+{% endblock %}

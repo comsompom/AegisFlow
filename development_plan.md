@@ -116,8 +116,8 @@ Deploy on **Neon EVM Devnet** (Solana test chain for EVM).
 
 | Step | Task | Details |
 |------|------|--------|
-| 2.5.1 | Deploy order | Deploy `ComplianceRegistry` first, then `AegisFlowVault` (with registry address), then swap adapter if separate. |
-| 2.5.2 | Scripts | Hardhat deploy scripts for Neon Devnet; save deployed addresses to `backend` config (e.g. JSON or env). |
+| 2.5.1 | Deploy order | Deploy `ComplianceRegistry` first, then `AegisFlowVault` (with registry address), then call `registry.setVault(vaultAddress)`. |
+| 2.5.2 | **Deploy with Python** | Use **Python** (not JS): `contracts/deploy.py` compiles with **solcx** and deploys with **web3.py** to Neon Devnet. Writes `deployed.json`; copy addresses to `backend` config (e.g. `.env`). |
 | 2.5.3 | Verification | Verify on NeonScan so judges can inspect. |
 
 **Deliverable:** Solidity contracts deployed on Neon EVM (Solana test chain); backend can read whitelist and limits from contracts.
@@ -322,8 +322,10 @@ AegisFlow/
 │   │   ├── ComplianceRegistry.sol
 │   │   ├── AegisFlowVault.sol
 │   │   └── AegisFlowSwap.sol     # optional
+│   ├── deploy.py           # Python deployment (solcx + web3.py)
+│   ├── requirements.txt   # web3, solcx, python-dotenv
 │   ├── script/
-│   │   └── deploy.js
+│   │   └── deploy.js       # optional (reference only)
 │   ├── test/
 │   ├── hardhat.config.js
 │   └── package.json

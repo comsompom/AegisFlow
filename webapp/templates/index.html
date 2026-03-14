@@ -1,0 +1,15 @@
+{% extends "base.html" %}
+{% block title %}AegisFlow — Welcome{% endblock %}
+{% block content %}
+<div class="hero-aegis">
+    <div class="hero-icon"><i class="bi bi-shield-check"></i></div>
+    <h1>AegisFlow</h1>
+    <p class="lead">AI-orchestrated, permissioned stablecoin payment and treasury router on Solana.</p>
+    <p class="text-muted mb-0">KYC • AML • KYT • Travel Rule — compliance sandbox for programmable payments.</p>
+    {% if current_user.is_authenticated %}
+    <a class="btn btn-hero" href="{{ url_for('dashboard.dashboard') }}"><i class="bi bi-grid-1x2 me-2"></i>Go to Dashboard</a>
+    {% else %}
+    <a class="btn btn-hero" href="{{ url_for('auth.login') }}"><i class="bi bi-box-arrow-in-right me-2"></i>Log in</a>
+    {% endif %}
+</div>
+{% endblock %}

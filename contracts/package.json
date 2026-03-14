@@ -1,0 +1,18 @@
+{
+  "name": "aegisflow-contracts",
+  "version": "1.0.0",
+  "description": "AegisFlow smart contracts for Neon EVM (Solana)",
+  "scripts": {
+    "compile": "hardhat compile",
+    "deploy": "hardhat run scripts/deploy.js --network neon_devnet",
+    "deploy:local": "hardhat run scripts/deploy.js --network localhost",
+    "test": "hardhat test"
+  },
+  "devDependencies": {
+    "@nomicfoundation/hardhat-toolbox": "^4.0.0",
+    "hardhat": "^2.19.0"
+  },
+  "engines": {
+    "node": ">=18.0.0"
+  }
+}
