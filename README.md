@@ -28,7 +28,7 @@ AegisFlow/
 
 - **Python** 3.11+ and **pip** (for contracts deployment, backend, and webapp)
 - **Node.js** 18+ and **npm** (optional — for Hardhat compile/test only)
-- **Neon EVM** wallet with test NEON ([faucet](https://neonfaucet.org))
+- **MetaMask** (or any Ethereum wallet): you will use its **private key** for deploying contracts and for the backend. Add [Neon EVM Devnet](https://neonfaucet.org) and get test NEON. See [Wallet & private keys](docs/WALLET_AND_KEYS.md) for where to get the key and where to put it.
 - **OpenAI API key** (optional, for AI treasury agent)
 
 ---
@@ -117,6 +117,7 @@ cd ..
 
 ## Documentation
 
+- [Wallet & private keys](docs/WALLET_AND_KEYS.md) — where to get your MetaMask private key and where to use it
 - [Development plan](development_plan.md) — full implementation plan
 - [Solution concept](solution.md) — AegisFlow concept and compliance sandbox
 - [Hackathon description](description.md) — StableHacks 2026 tracks and rules

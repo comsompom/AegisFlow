@@ -1,6 +1,8 @@
-from fastapi import APIRouter, HTTPException
+from fastapi import APIRouter, HTTPException, Depends
 from pydantic import BaseModel
+from sqlalchemy.orm import Session
 
+from app.database import get_db
 from app.services.audit import log
 
 router = APIRouter()
@@ -36,7 +38,7 @@ def list_proposals(limit: int = 50):
 
 
 @router.post("/propose")
-def submit_proposal(p: Proposal):
+def submit_proposal(p: Proposal, db: Session = Depends(get_db)):
     """AI agent or user submits a proposal; compliance checks happen on execute."""
     entry = {
         "action": p.action,
@@ -48,7 +50,7 @@ def submit_proposal(p: Proposal):
         "status": "pending",
     }
     _proposals.append(entry)
-    log("proposal", "ai_agent", metadata=entry)
+    log(db, "proposal", "ai_agent", metadata=entry)
     return {"ok": True, "proposal": entry}
 
 

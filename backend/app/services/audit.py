@@ -1,11 +1,15 @@
-"""Audit log for proposals and transactions."""
-from datetime import datetime
+"""Audit log — persisted in SQLite."""
+import json
 from typing import Any
 
-_audit_log: list[dict[str, Any]] = []
+from sqlalchemy.orm import Session
+from sqlalchemy import desc
+
+from app.models_db import AuditLog
 
 
 def log(
+    db: Session,
     action: str,
     actor: str,
     amount: int | None = None,
@@ -15,23 +19,35 @@ def log(
     reason: str | None = None,
     metadata: dict | None = None,
 ) -> None:
-    entry = {
-        "timestamp": datetime.utcnow().isoformat() + "Z",
-        "action": action,
-        "actor": actor,
-        "amount": amount,
-        "counterparty": counterparty,
-        "status": status,
-        "tx_hash": tx_hash,
-        "reason": reason,
-        "metadata": metadata or {},
-    }
-    _audit_log.append(entry)
+    entry = AuditLog(
+        action=action,
+        actor=actor,
+        amount=amount,
+        counterparty=counterparty,
+        status=status,
+        tx_hash=tx_hash,
+        reason=reason,
+        metadata_json=json.dumps(metadata) if metadata else None,
+    )
+    db.add(entry)
 
 
-def get_log(limit: int = 100, action_filter: str | None = None) -> list[dict[str, Any]]:
-    out = list(_audit_log)
+def get_log(db: Session, limit: int = 100, action_filter: str | None = None) -> list[dict[str, Any]]:
+    q = db.query(AuditLog).order_by(desc(AuditLog.id))
     if action_filter:
-        out = [e for e in out if e["action"] == action_filter]
-    out.reverse()
-    return out[:limit]
+        q = q.filter(AuditLog.action == action_filter)
+    rows = q.limit(limit).all()
+    return [
+        {
+            "timestamp": r.timestamp.isoformat() + "Z" if r.timestamp else None,
+            "action": r.action,
+            "actor": r.actor,
+            "amount": r.amount,
+            "counterparty": r.counterparty,
+            "status": r.status,
+            "tx_hash": r.tx_hash,
+            "reason": r.reason,
+            "metadata": json.loads(r.metadata_json) if r.metadata_json else {},
+        }
+        for r in rows
+    ]

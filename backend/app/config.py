@@ -12,7 +12,8 @@ class Settings(BaseSettings):
     travel_rule_threshold: float = 1000.0
     kyt_api_url: str | None = None
     kyt_api_key: str | None = None
-    database_url: str = "sqlite+aiosqlite:///./aegisflow.db"
+    # SQLite (required). Path relative to process cwd; use absolute path if needed.
+    database_url: str = "sqlite:///./aegisflow.db"
 
     model_config = {"env_file": ".env", "extra": "ignore"}
 

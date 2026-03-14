@@ -3,6 +3,7 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
 from app.config import get_settings
+from app.database import init_db
 from app.api import compliance, transfers, audit, ai_agent, health
 
 app = FastAPI(
@@ -10,6 +11,12 @@ app = FastAPI(
     description="Compliance, treasury, and blockchain API for AegisFlow",
     version="1.0.0",
 )
+
+
+@app.on_event("startup")
+def on_startup():
+    """Create SQLite tables on startup."""
+    init_db()
 
 app.add_middleware(
     CORSMiddleware,

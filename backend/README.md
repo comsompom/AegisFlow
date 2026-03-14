@@ -1,6 +1,6 @@
 # AegisFlow Backend (FastAPI)
 
-API for compliance checks, transfers, audit log, Travel Rule, and AI treasury agent.
+API for compliance checks, transfers, audit log, Travel Rule, and AI treasury agent. **SQLite is required**: audit log and Travel Rule payloads are stored in `aegisflow.db` (created automatically on first run).
 
 ## Setup
 
@@ -10,7 +10,7 @@ python -m venv venv
 # macOS/Linux: source venv/bin/activate
 pip install -r requirements.txt
 cp .env.example .env
-# Edit .env: NEON_RPC_URL, contract addresses, OPENAI_API_KEY (optional)
+# Edit .env: NEON_RPC_URL, contract addresses, OPENAI_API_KEY (optional). DATABASE_URL defaults to sqlite:///./aegisflow.db
 ```
 
 ## Run
