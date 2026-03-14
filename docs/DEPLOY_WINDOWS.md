@@ -58,12 +58,12 @@ overflow-checks = true
 
 **"no such command: build-sbf"**: Anchor needs the Solana build toolchain. Either install the full **Solana CLI** (see below), or run `cargo install solana-cargo-build-sbf`, **close and reopen your terminal**, then run `anchor build` again. You still need the **Solana CLI** for `anchor deploy` (keypair, config, airdrop).
 
-**"Failed to install platform-tools: A required privilege is not held by the client. (os error 1314)"**: On native Windows, `cargo-build-sbf` needs to install the SBF toolchain and can fail without admin rights. **Fix:** Right-click **PowerShell → Run as administrator**, then run:
+**"Failed to install platform-tools: A required privilege is not held by the client. (os error 1314)"**: On native Windows, `cargo-build-sbf` installs the SBF toolchain on first run and needs admin rights for that. **Fix:** Right-click **PowerShell → Run as administrator**, then run:
 ```powershell
 cd C:\Users\obourdo\AegisFlow
-.\scripts\install_solana_admin.ps1
+.\scripts\install_platform_tools_admin.ps1
 ```
-When it finishes, close that window, open a **new normal** PowerShell, and run `.\scripts\deploy_solana_devnet.ps1` again. Alternatively **use WSL (Option A)** and run the deploy from Ubuntu.
+(This runs `anchor build` once as admin so platform-tools are installed; if you don’t have Solana/Agave yet, run `.\scripts\install_solana_admin.ps1` first.) When the script finishes, close that window, open a **new normal** PowerShell, and run `.\scripts\deploy_solana_devnet.ps1` again. Alternatively **use WSL (Option A)** and run the deploy from Ubuntu.
 
 ---
 

@@ -44,16 +44,21 @@ Push-Location (Join-Path $root "contracts-solana")
 try {
     solana config set --url devnet
     Write-Host "Building Anchor program..." -ForegroundColor Cyan
-    $buildOut = & anchor build 2>&1
+    $ErrorActionPreferencePrev = $ErrorActionPreference
+    $ErrorActionPreference = "Continue"
+    $buildOut = & anchor build 2>&1 | Out-String
     $buildExit = $LASTEXITCODE
-    $buildOut | Out-Host
+    $ErrorActionPreference = $ErrorActionPreferencePrev
+    Write-Host $buildOut
     if ($buildExit -ne 0) {
-        if ($buildOut -match "platform-tools|1314|privilege") {
+        $isPlatformToolsError = ($buildOut -match "platform-tools|1314|privilege|required privilege")
+        if ($isPlatformToolsError) {
             Write-Host ""
             Write-Host "*** Platform-tools install needs elevated rights on Windows. ***" -ForegroundColor Yellow
             Write-Host "Fix: Right-click PowerShell -> Run as administrator, then run:" -ForegroundColor Yellow
             Write-Host "  cd `"$root`"" -ForegroundColor White
-            Write-Host "  .\scripts\install_solana_admin.ps1" -ForegroundColor White
+            Write-Host "  .\scripts\install_platform_tools_admin.ps1" -ForegroundColor White
+            Write-Host "(If you already ran install_solana_admin.ps1, use the line above. Otherwise run .\scripts\install_solana_admin.ps1)" -ForegroundColor Gray
             Write-Host "Then close that window, open a new normal terminal, and run this script again." -ForegroundColor Yellow
             Write-Host "Alternatively, build and deploy from WSL (see docs/DEPLOY_WINDOWS.md)." -ForegroundColor Yellow
         }

@@ -1,7 +1,7 @@
 # Run this script as Administrator (right-click PowerShell -> Run as administrator).
 # It installs Agave/Solana CLI and platform-tools so "anchor build" works on Windows.
-# After it finishes, close this window, open a normal PowerShell, and run:
-#   cd C:\Users\obourdo\AegisFlow
+# Run from your repo root, e.g.:  cd C:\Users\obourdo\AegisFlow  then  .\scripts\install_solana_admin.ps1
+# After it finishes, close this window, open a normal PowerShell, cd to the same repo, and run:
 #   .\scripts\deploy_solana_devnet.ps1
 
 $ErrorActionPreference = "Stop"
@@ -16,13 +16,31 @@ Write-Host "Running Agave installer (v3.1.10)..."
 & $installer v3.1.10
 if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
 Write-Host ""
-Write-Host "Install complete. Add Solana to PATH for this user:"
+
 $solanaPath = "$env:USERPROFILE\.local\share\solana\install\active_release\bin"
-if (Test-Path $solanaPath) {
-    Write-Host "  $solanaPath"
-    Write-Host "Add the above to your user PATH, or run:  `$env:PATH = `"$solanaPath;`$env:PATH`""
+# Refresh PATH in this session so we can run anchor/cargo-build-sbf
+$env:PATH = "$solanaPath;$env:PATH"
+$repoRoot = Split-Path -Parent $PSScriptRoot
+$contractsDir = Join-Path $repoRoot "contracts-solana"
+
+if ((Test-Path $solanaPath) -and (Test-Path (Join-Path $contractsDir "Anchor.toml"))) {
+    Write-Host "Installing platform-tools (one-time, needs admin)... Run anchor build in this admin window." -ForegroundColor Cyan
+    Push-Location $contractsDir
+    try {
+        & anchor build 2>&1 | Out-Host
+        if ($LASTEXITCODE -eq 0) {
+            Write-Host "Platform-tools and build OK. You can now use a normal terminal to deploy." -ForegroundColor Green
+        } else {
+            Write-Host "Build had errors; platform-tools may still have been installed. Try deploy from a new terminal." -ForegroundColor Yellow
+        }
+    } finally {
+        Pop-Location
+    }
+    Write-Host ""
 } else {
-    Write-Host "  Check Agave docs for install path: https://docs.anza.xyz/cli/install/"
+    Write-Host "Solana bin path: $solanaPath" -ForegroundColor Gray
 }
-Write-Host ""
-Write-Host "Then in a NEW (normal) terminal run:  cd AegisFlow; .\scripts\deploy_solana_devnet.ps1"
+
+Write-Host "In a NEW (normal) terminal run:"
+Write-Host "  cd `"$repoRoot`""
+Write-Host "  .\scripts\deploy_solana_devnet.ps1"
