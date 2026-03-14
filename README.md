@@ -1,8 +1,6 @@
 # AegisFlow
 
-<p align="center">
-  <img src="aegis_flow_logo.png" alt="AegisFlow Logo" width="160" />
-</p>
+!["AegisFlow Logo"](aegis_flow_logo.jpg)
 
 **Track 3: Programmable Stablecoin Payments** — StableHacks 2026
 
